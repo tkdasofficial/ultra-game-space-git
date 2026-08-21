@@ -1,0 +1,6 @@
+{
+  "name": "Ultra Game Space",
+  "description": "Landscape game booster dashboard with performance stats, game carousel and one-tap boost.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
