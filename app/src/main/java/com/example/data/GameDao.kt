@@ -1,6 +1,7 @@
 package com.example.data
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import com.example.models.Game
@@ -13,4 +14,7 @@ interface GameDao {
 
     @Insert
     suspend fun insertGame(game: Game)
+    
+    @Delete
+    suspend fun deleteGame(game: Game)
 }

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.content.pm.PackageManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,37 +18,84 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.graphics.drawable.toBitmap
 import com.example.R
 import com.example.models.Game
 import com.example.models.Stat
 import com.example.ui.components.*
 import com.example.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Top-level extension functions for CQH (Container Query Height) equivalent scaling
 private fun Double.cqh(multiplier: Float): Dp = (this.toFloat() * multiplier).dp
 private fun Double.cqhSp(multiplier: Float): TextUnit = (this.toFloat() * multiplier).sp
 
 @Composable
+fun AppIconImage(
+    packageName: String,
+    contentDescription: String,
+    modifier: Modifier = Modifier,
+    alpha: Float = 1f
+) {
+    val context = LocalContext.current
+    val pm = context.packageManager
+    var appIcon by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
+
+    LaunchedEffect(packageName) {
+        withContext(Dispatchers.IO) {
+            try {
+                val drawable = pm.getApplicationIcon(packageName)
+                appIcon = drawable.toBitmap(width = 150, height = 150)
+            } catch (e: Throwable) {
+                // Ignore
+            }
+        }
+    }
+
+    if (appIcon != null) {
+        Image(
+            bitmap = appIcon!!.asImageBitmap(),
+            contentDescription = contentDescription,
+            modifier = modifier,
+            contentScale = ContentScale.Crop,
+            alpha = alpha
+        )
+    } else {
+        Box(modifier = modifier.background(PanelDark2), contentAlignment = Alignment.Center) {
+            Icon(Icons.Default.VideogameAsset, contentDescription = contentDescription, tint = TextSecondary)
+        }
+    }
+}
+
+@Composable
 fun DashboardScreen(
     gameViewModel: com.example.viewmodels.GameViewModel,
     statsViewModel: com.example.viewmodels.SystemStatsViewModel,
     onNavigateToLobby: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToSettings: () -> Unit,
+    onNavigateToAppManagement: () -> Unit
 ) {
-    var activeGameIndex by remember { mutableIntStateOf(1) }
+    var activeGameIndex by remember { mutableIntStateOf(0) }
     var performanceMode by remember { mutableStateOf("ECONOMY") }
     var isModeMenuOpen by remember { mutableStateOf(false) }
 
     val games by gameViewModel.games.collectAsState()
     val stats by statsViewModel.stats.collectAsState()
+    
+    // Ensure active index is valid
+    if (games.isNotEmpty() && activeGameIndex >= games.size) {
+        activeGameIndex = 0
+    }
 
     val modes = listOf("ECONOMY", "BALANCE", "ULTRA", "EXTREME")
     val isBoosted = performanceMode != "ECONOMY"
@@ -213,7 +261,22 @@ fun DashboardScreen(
                     verticalArrangement = Arrangement.Center
                 ) {
                     if (games.isEmpty()) {
-                        Text("NO GAMES INSTALLED", color = TextSecondary, fontFamily = Rajdhani, fontSize = 2.4.cqhSp(m))
+                        Box(
+                            modifier = Modifier
+                                .size(26.0.cqh(m))
+                                .border(2.dp, BorderDark, CircleShape)
+                                .background(PanelDark.copy(alpha = 0.6f), CircleShape)
+                                .clip(CircleShape)
+                                .clickable(onClick = onNavigateToAppManagement),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add Game",
+                                tint = PrimaryRed,
+                                modifier = Modifier.size(8.0.cqh(m))
+                            )
+                        }
                     } else {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -233,8 +296,16 @@ fun DashboardScreen(
                             val prev = (activeGameIndex + games.size - 1) % games.size
                             val next = (activeGameIndex + 1) % games.size
                             
-                            listOf(prev, activeGameIndex, next).forEachIndexed { pos, i ->
-                                val isActive = pos == 1
+                            val indicesToShow = if (games.size >= 3) {
+                                listOf(prev, activeGameIndex, next)
+                            } else if (games.size == 2) {
+                                listOf(prev, activeGameIndex)
+                            } else {
+                                listOf(activeGameIndex)
+                            }
+                            
+                            indicesToShow.forEachIndexed { pos, i ->
+                                val isActive = (games.size >= 3 && pos == 1) || (games.size < 3 && i == activeGameIndex)
                                 val g = games[i]
                                 val size = if (isActive) 26.0.cqh(m) else 18.0.cqh(m)
                                 
@@ -255,13 +326,12 @@ fun DashboardScreen(
                                                 }
                                             }
                                     ) {
-                                        Image(
-                                            painter = painterResource(id = g.imageResId),
+                                        AppIconImage(
+                                            packageName = g.packageName,
                                             contentDescription = g.name,
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .clip(CircleShape),
-                                            contentScale = ContentScale.Crop,
                                             alpha = if (isActive) 1f else 0.65f
                                         )
                                     }
@@ -310,7 +380,7 @@ fun DashboardScreen(
                         )
                     }
                 }
-                        }
+            }
 
             Spacer(modifier = Modifier.height(2.4.cqh(m)))
 

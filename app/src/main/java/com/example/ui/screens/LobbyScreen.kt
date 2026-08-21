@@ -44,17 +44,16 @@ private fun Double.cqh(multiplier: Float): Dp = (this.toFloat() * multiplier).dp
 private fun Double.cqhSp(multiplier: Float): TextUnit = (this.toFloat() * multiplier).sp
 
 @Composable
-fun LobbyScreen(gameViewModel: com.example.viewmodels.GameViewModel, onNavigateBack: () -> Unit) {
+fun LobbyScreen(
+    gameViewModel: com.example.viewmodels.GameViewModel, 
+    onNavigateBack: () -> Unit,
+    onNavigateToAppManagement: () -> Unit
+) {
     val configuration = LocalConfiguration.current
     val m = configuration.screenHeightDp / 100f
     
     val library by gameViewModel.games.collectAsState()
-    /* 
-        Game("CALL OF DUTY", R.drawable.game_cod, "ULTRA", "42h 10m", "120 FPS"),
-        Game("PUBG MOBILE", R.drawable.game_pubg, "EXTREME", "78h 55m", "90 FPS"),
-        Game("ASPHALT 9", R.drawable.game_asphalt, "BALANCE", "12h 30m", "60 FPS")
-    */
-
+    
     Box(modifier = Modifier.fillMaxSize().background(BackgroundDark)) {
         Box(
             modifier = Modifier
@@ -133,7 +132,7 @@ fun LobbyScreen(gameViewModel: com.example.viewmodels.GameViewModel, onNavigateB
                                 .border(1.dp, BorderDark, ClipNotchShape(14.dp))
                                 .background(PanelDark.copy(alpha = 0.6f), ClipNotchShape(14.dp))
                                 .clip(ClipNotchShape(14.dp))
-                                .clickable { /* Add Game */ },
+                                .clickable { onNavigateToAppManagement() },
                             contentAlignment = Alignment.Center
                         ) {
                             Column(
@@ -178,10 +177,9 @@ fun GameCard(game: Game, m: Float, modifier: Modifier = Modifier) {
                     .weight(1f)
                     .fillMaxWidth()
             ) {
-                Image(
-                    painter = painterResource(id = game.imageResId),
+                AppIconImage(
+                    packageName = game.packageName,
                     contentDescription = game.name,
-                    contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
                 Text(

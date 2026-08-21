@@ -7,6 +7,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.ui.screens.AppManagementScreen
 import com.example.ui.screens.DashboardScreen
 import com.example.ui.screens.LobbyScreen
 import com.example.ui.screens.SettingsScreen
@@ -30,17 +31,25 @@ fun AppNavigation() {
                 gameViewModel = gameViewModel,
                 statsViewModel = statsViewModel,
                 onNavigateToLobby = { navController.navigate("lobby") },
-                onNavigateToSettings = { navController.navigate("settings") }
+                onNavigateToSettings = { navController.navigate("settings") },
+                onNavigateToAppManagement = { navController.navigate("app_management") }
             )
         }
         composable("lobby") {
             LobbyScreen(
                 gameViewModel = gameViewModel,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAppManagement = { navController.navigate("app_management") }
             )
         }
         composable("settings") {
             SettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable("app_management") {
+            AppManagementScreen(
+                gameViewModel = gameViewModel,
                 onNavigateBack = { navController.popBackStack() }
             )
         }
