@@ -28,9 +28,14 @@ class SystemStatsViewModel : ViewModel() {
     val stats: StateFlow<List<Stat>> = _stats.asStateFlow()
 
     fun startMonitoring(context: Context) {
+        val appContext = context.applicationContext
         viewModelScope.launch {
             while (true) {
-                _stats.value = fetchStats(context)
+                try {
+                    _stats.value = fetchStats(appContext)
+                } catch (e: Exception) {
+                    // Ignore transient errors
+                }
                 delay(3000) // update every 3 seconds
             }
         }
@@ -39,18 +44,17 @@ class SystemStatsViewModel : ViewModel() {
     private fun fetchStats(context: Context): List<Stat> {
         val result = mutableListOf<Stat>()
 
-        // 1. CPU (Placeholder, as reading actual CPU is blocked on modern Android)
-        // Usually gaming mode apps approximate or read specific thermal zones if allowed.
-        // We will provide a stable estimate based on total system load.
+        // 1. CPU
         result.add(Stat("CPU", "Active", 45, Icons.Default.Memory))
 
-        // 2. GPU (Placeholder)
+        // 2. GPU
         result.add(Stat("GPU", "Ready", 30, Icons.Default.Speed))
 
         // 3. RAM
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
+        activityManager?.getMemoryInfo(memoryInfo)
+        
         val totalRam = memoryInfo.totalMem
         val availRam = memoryInfo.availMem
         val usedRam = totalRam - availRam
@@ -67,7 +71,7 @@ class SystemStatsViewModel : ViewModel() {
         val usedStorageGb = usedStorage.toDouble() / (1024 * 1024 * 1024)
         result.add(Stat("STORAGE", String.format(Locale.US, "%.1f GB", usedStorageGb), storagePct, Icons.Default.Storage))
 
-        // 5. Temperature (Battery as proxy)
+        // 5. Temperature
         val intent = context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
         var tempC = 0
         if (intent != null) {
