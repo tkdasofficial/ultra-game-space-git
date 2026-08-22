@@ -32,16 +32,20 @@ jobs:
         run: gradle assembleRelease --no-daemon
 
       - name: Sign APK
-        uses: r0adkll/sign-android-release@v1
         id: sign_app
         env:
-          BUILD_TOOLS_VERSION: "34.0.0"
-        with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.KEYSTORE_B64 }}
-          alias: ${{ secrets.KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
-          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 --decode > release.keystore
+          APK_PATH=$(find app/build/outputs/apk/release -name "*.apk" | head -n 1)
+          
+          /usr/local/lib/android/sdk/build-tools/34.0.0/zipalign -v -p 4 "$APK_PATH" app-release-aligned.apk
+          /usr/local/lib/android/sdk/build-tools/34.0.0/apksigner sign --ks release.keystore --ks-pass "env:STORE_PASSWORD" --key-pass "env:KEY_PASSWORD" --ks-key-alias "$KEY_ALIAS" --out app-release-signed.apk app-release-aligned.apk
+          
+          echo "signedReleaseFile=app-release-signed.apk" >> "$GITHUB_OUTPUT"
 
       - name: Upload Signed APK
         uses: actions/upload-artifact@v4
