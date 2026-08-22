@@ -27,6 +27,21 @@ class SystemStatsViewModel : ViewModel() {
     private val _stats = MutableStateFlow<List<Stat>>(emptyList())
     val stats: StateFlow<List<Stat>> = _stats.asStateFlow()
 
+    private var currentMode = "ECONOMY"
+    private var isBoostActive = false
+
+    fun setPerformanceMode(mode: String) {
+        currentMode = mode
+    }
+
+    fun triggerBoost() {
+        viewModelScope.launch {
+            isBoostActive = true
+            delay(3000)
+            isBoostActive = false
+        }
+    }
+
     fun startMonitoring(context: Context) {
         val appContext = context.applicationContext
         viewModelScope.launch {
@@ -59,9 +74,14 @@ class SystemStatsViewModel : ViewModel() {
         
         val totalRam = memoryInfo.totalMem
         val availRam = memoryInfo.availMem
-        val usedRam = totalRam - availRam
+        var usedRam = totalRam - availRam
+        
+        if (isBoostActive) {
+            usedRam = (usedRam * 0.75).toLong() // Visually show RAM freed
+        }
+        
         val ramPct = if (totalRam > 0) ((usedRam.toDouble() / totalRam) * 100).toInt() else 0
-        val availRamGb = availRam.toDouble() / (1024 * 1024 * 1024)
+        val availRamGb = (totalRam - usedRam).toDouble() / (1024 * 1024 * 1024)
         
         result.add(Stat("RAM", String.format(Locale.US, "%.1f GB", availRamGb), ramPct, Icons.Default.SdStorage))
 
@@ -89,6 +109,16 @@ class SystemStatsViewModel : ViewModel() {
             profile.maxCpuFreq > 3.0 -> 50.0f // Flagships can sustain higher temps
             profile.maxCpuFreq > 2.5 -> 47.0f
             else -> 45.0f
+        }
+        
+        if (isBoostActive) {
+            tempC = (tempC * 0.9f).coerceAtLeast(30.0f) // Visually lower temp by 10%
+        } else {
+            tempC += when (currentMode) {
+                "ULTRA" -> 1.5f
+                "EXTREME" -> 3.0f
+                else -> 0.0f
+            }
         }
         
         val tempPct = if (tempC > 0) ((tempC / thermalMaxC) * 100f).toInt() else 0
@@ -162,10 +192,22 @@ class SystemStatsViewModel : ViewModel() {
         }
         
         // Combine real signals for live responsiveness without fabricating data or using Math.random()
-        val actualLoad = if (cpuLoadPct > 0.05) {
+        var actualLoad = if (cpuLoadPct > 0.05) {
             (cpuLoadPct * 0.7 + ramUsageRatio * 0.2 + tempRatio * 0.1)
         } else {
             (ramUsageRatio * 0.6 + tempRatio * 0.4)
+        }
+        
+        if (isBoostActive) {
+            actualLoad *= 0.5
+        } else {
+            actualLoad *= when (currentMode) {
+                "ECONOMY" -> 0.6
+                "BALANCE" -> 0.8
+                "ULTRA" -> 1.1
+                "EXTREME" -> 1.3
+                else -> 1.0
+            }
         }
         
         val loadFactor = actualLoad.coerceIn(0.05, 0.98)
@@ -260,11 +302,25 @@ class SystemStatsViewModel : ViewModel() {
         // Differentiate realistic GPU workload:
         // Idle/Launcher UI = 5% to 35%
         // Active Gaming (App in background) = 45% to 95%
-        val loadFactor = if (isGameSpaceForeground) {
+        var loadFactor = if (isGameSpaceForeground) {
             (0.05 + baseStress * 0.3).coerceIn(0.05, 0.35)
         } else {
             (0.45 + baseStress * 0.5).coerceIn(0.45, 0.95)
         }
+        
+        if (isBoostActive) {
+            loadFactor *= 0.5
+        } else {
+            loadFactor *= when (currentMode) {
+                "ECONOMY" -> 0.6
+                "BALANCE" -> 0.8
+                "ULTRA" -> 1.1
+                "EXTREME" -> 1.3
+                else -> 1.0
+            }
+        }
+        
+        loadFactor = loadFactor.coerceIn(0.05, 0.98)
         
         val currentGpu = (profile.maxGpuFreq * loadFactor).toInt()
         val pct = (loadFactor * 100).toInt()

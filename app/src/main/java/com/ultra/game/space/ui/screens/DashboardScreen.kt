@@ -92,7 +92,6 @@ fun DashboardScreen(
     onNavigateToAppManagement: () -> Unit
 ) {
     var activeGameIndex by remember { mutableIntStateOf(0) }
-    var performanceMode by remember { mutableStateOf("ECONOMY") }
     var isModeMenuOpen by remember { mutableStateOf(false) }
     var menuOffset by remember { mutableStateOf(androidx.compose.ui.unit.DpOffset.Zero) }
     val density = androidx.compose.ui.platform.LocalDensity.current
@@ -102,9 +101,12 @@ fun DashboardScreen(
     
     val context = androidx.compose.ui.platform.LocalContext.current
     val optManager = remember { com.ultra.game.space.managers.OptimizationManager(context) }
+    val settingsManager = remember { com.ultra.game.space.managers.SettingsManager(context) }
     
-    LaunchedEffect(performanceMode) {
-        optManager.applyOptimization(performanceMode)
+    var performanceMode by remember { mutableStateOf(settingsManager.getString("PERFORMANCE_MODE", "ECONOMY")) }
+    
+    LaunchedEffect(Unit) {
+        statsViewModel.setPerformanceMode(performanceMode)
     }
     
     // Ensure active index is valid
@@ -435,17 +437,22 @@ fun DashboardScreen(
                     ) {
                         modes.forEach { mStr ->
                             DropdownMenuItem(
+                                modifier = Modifier.height(5.5.cqh(m)),
+                                contentPadding = PaddingValues(horizontal = 2.0.cqh(m), vertical = 0.dp),
                                 text = { 
                                     Text(
                                         text = mStr, 
                                         color = if (mStr == performanceMode) PrimaryRed else TextSecondary, 
                                         fontWeight = FontWeight.Bold, 
                                         fontFamily = Rajdhani,
-                                        fontSize = 2.0.cqhSp(m)
+                                        fontSize = 1.8.cqhSp(m)
                                     ) 
                                 },
                                 onClick = {
                                     performanceMode = mStr
+                                    settingsManager.putString("PERFORMANCE_MODE", mStr)
+                                    optManager.applyOptimization(mStr)
+                                    statsViewModel.setPerformanceMode(mStr)
                                     isModeMenuOpen = false
                                 }
                             )
@@ -468,11 +475,14 @@ fun DashboardScreen(
                             scope.launch {
                                 boostText = "BOOSTING..."
                                 optManager.applyOptimization("EXTREME")
+                                statsViewModel.triggerBoost()
                                 delay(1000)
                                 Toast.makeText(context, "Memory Freed & Background Tasks Killed", Toast.LENGTH_SHORT).show()
                                 boostText = "BOOSTED"
                                 delay(2000)
                                 boostText = "BOOST NOW"
+                                // Re-apply current mode after boost burst
+                                optManager.applyOptimization(performanceMode)
                             }
                         }
                         .background(
