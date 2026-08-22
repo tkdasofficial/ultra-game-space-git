@@ -20,6 +20,7 @@ import java.io.PrintWriter
 import java.io.StringWriter
 
 class MainActivity : ComponentActivity() {
+  @android.annotation.SuppressLint("InvalidFragmentVersionForActivityResult")
   private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ -> }
 
   override fun onCreate(savedInstanceState: Bundle?) {
