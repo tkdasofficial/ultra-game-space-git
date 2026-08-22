@@ -77,12 +77,6 @@ fun LobbyScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(3.0.cqh(m))
-                            .background(PrimaryRed, ClipNotchShape(8.dp))
-                    )
-                    Spacer(modifier = Modifier.width(1.6.cqh(m)))
                     Text(
                         text = "GAME LOBBY",
                         color = TextPrimary,

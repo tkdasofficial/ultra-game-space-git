@@ -163,11 +163,38 @@ fun DisplaySettings(m: Float) {
     var frameRate by remember { mutableStateOf("60") }
     var hdrColorBoost by remember { mutableStateOf(false) }
     var antiAliasing by remember { mutableStateOf(true) }
-    var autoTouch by remember { mutableStateOf(false) }
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val profile = remember { com.ultra.game.space.managers.DeviceCapabilityManager.getProfile(context) }
+    
+    val supportedGraphics = mutableListOf("SMOOTH", "STANDARD", "HD")
+    if (profile.maxResolution == "FHD" || profile.maxResolution == "1080P" || profile.maxResolution == "2K" || profile.maxResolution == "4K") {
+        supportedGraphics.add("FHD")
+    }
+    if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
+        supportedGraphics.add("HDR")
+    }
+    if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
+        supportedGraphics.add("ULTRA HDR")
+    }
+    if (profile.maxResolution == "4K" || profile.maxGpuFreq > 1500) {
+        supportedGraphics.add("EXTREME")
+    }
+    
+    val supportedFps = mutableListOf("AUTO", "60")
+    if (profile.maxFps >= 90) supportedFps.add("90")
+    if (profile.maxFps >= 120) supportedFps.add("120")
+    if (profile.maxFps >= 144) supportedFps.add("EXTREME")
+    
+    // Ensure selected values are valid
+    LaunchedEffect(profile) {
+        if (!supportedGraphics.contains(graphics)) graphics = supportedGraphics.last()
+        if (!supportedFps.contains(frameRate)) frameRate = supportedFps.last()
+    }
 
     SettingsSectionTitle("Display", m)
     SettingsRow("Graphics", hint = true, m = m) {
-        SettingsSegmentedControl(listOf("SMOOTH", "STANDARD", "HD", "FHD", "HDR", "ULTRA HDR", "EXTREME"), graphics, m) { graphics = it }
+        SettingsSegmentedControl(listOf("SMOOTH", "STANDARD", "HD", "FHD", "HDR", "ULTRA HDR", "EXTREME"), graphics, m, supportedGraphics) { graphics = it }
     }
     SettingsRow("HDR Color Boost", sub = true, m = m) {
         SettingsToggle(hdrColorBoost, m) { hdrColorBoost = it }
@@ -175,12 +202,13 @@ fun DisplaySettings(m: Float) {
 
     SettingsSectionTitle("Frame Rate", m)
     SettingsRow("FPS Settings", hint = true, m = m) {
-        SettingsSegmentedControl(listOf("AUTO", "60", "90", "120", "EXTREME"), frameRate, m) { frameRate = it }
+        SettingsSegmentedControl(listOf("AUTO", "60", "90", "120", "EXTREME"), frameRate, m, supportedFps) { frameRate = it }
     }
     SettingsRow("Anti-Aliasing", sub = true, m = m) {
         SettingsToggle(antiAliasing, m) { antiAliasing = it }
     }
 
+    var autoTouch by remember { mutableStateOf(false) }
     SettingsSectionTitle("Developer", m)
     SettingsRow("Auto Touch Debugging", hint = true, m = m) {
         SettingsToggle(autoTouch, m) { autoTouch = it }
@@ -189,35 +217,57 @@ fun DisplaySettings(m: Float) {
 
 @Composable
 fun NotificationSettings(m: Float) {
-    var boostAlerts by remember { mutableStateOf(true) }
-    var overheatWarnings by remember { mutableStateOf(true) }
-    var gameInvites by remember { mutableStateOf(false) }
-    var dnd by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settings = remember { com.ultra.game.space.managers.SettingsManager(context) }
+    var boostAlerts by remember { mutableStateOf(settings.getBoolean("boostAlerts", true)) }
+    var overheatWarnings by remember { mutableStateOf(settings.getBoolean("overheatWarnings", true)) }
+    var gameInvites by remember { mutableStateOf(settings.getBoolean("gameInvites", false)) }
+    var dnd by remember { mutableStateOf(settings.getBoolean("dnd", false)) }
 
     SettingsSectionTitle("Alerts", m)
-    SettingsRow("Boost Alerts", m = m) { SettingsToggle(boostAlerts, m) { boostAlerts = it } }
-    SettingsRow("Overheat Warnings", hint = true, m = m) { SettingsToggle(overheatWarnings, m) { overheatWarnings = it } }
+    SettingsRow("Boost Alerts", m = m) { SettingsToggle(boostAlerts, m) { boostAlerts = it; settings.putBoolean("boostAlerts", it) } }
+    SettingsRow("Overheat Warnings", hint = true, m = m) { SettingsToggle(overheatWarnings, m) { overheatWarnings = it; settings.putBoolean("overheatWarnings", it) } }
     
     SettingsSectionTitle("Social", m)
-    SettingsRow("Game Invites", m = m) { SettingsToggle(gameInvites, m) { gameInvites = it } }
+    SettingsRow("Game Invites", m = m) { SettingsToggle(gameInvites, m) { gameInvites = it; settings.putBoolean("gameInvites", it) } }
     
     SettingsSectionTitle("Focus", m)
-    SettingsRow("Do-Not-Disturb in Game", sub = true, m = m) { SettingsToggle(dnd, m) { dnd = it } }
+    SettingsRow("Do-Not-Disturb in Game", sub = true, m = m) { SettingsToggle(dnd, m) { dnd = it; settings.putBoolean("dnd", it) } }
 }
 
 @Composable
 fun RecordingSettings(m: Float) {
-    var resolution by remember { mutableStateOf("1080P") }
-    var frameRate by remember { mutableStateOf("60FPS") }
-    var bitrate by remember { mutableStateOf(12f) }
-    var audioSource by remember { mutableStateOf("INTERNAL") }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settings = remember { com.ultra.game.space.managers.SettingsManager(context) }
+    var resolution by remember { mutableStateOf(settings.getString("rec_resolution", "1080P")) }
+    var frameRate by remember { mutableStateOf(settings.getString("rec_frameRate", "60FPS")) }
+    var bitrate by remember { mutableStateOf(settings.getFloat("rec_bitrate", 12f)) }
+    var audioSource by remember { mutableStateOf(settings.getString("rec_audioSource", "INTERNAL")) }
+
+    val profile = remember { com.ultra.game.space.managers.DeviceCapabilityManager.getProfile(context) }
+    
+    val supportedRes = mutableListOf("480P", "720P", "1080P")
+    if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
+        supportedRes.add("2K")
+    }
+    if (profile.maxResolution == "4K") {
+        supportedRes.add("4K")
+    }
+    
+    val supportedFps = mutableListOf("24FPS", "30FPS", "60FPS")
+    if (profile.maxFps >= 120) supportedFps.add("120FPS")
+    
+    LaunchedEffect(profile) {
+        if (!supportedRes.contains(resolution)) resolution = supportedRes.last()
+        if (!supportedFps.contains(frameRate)) frameRate = supportedFps.last()
+    }
 
     SettingsSectionTitle("Video", m)
     SettingsRow("Resolution", m = m) {
-        SettingsSegmentedControl(listOf("480P", "720P", "1080P", "2K", "4K"), resolution, m) { resolution = it }
+        SettingsSegmentedControl(listOf("480P", "720P", "1080P", "2K", "4K"), resolution, m, supportedRes) { resolution = it }
     }
     SettingsRow("Frame Rate", m = m) {
-        SettingsSegmentedControl(listOf("24FPS", "30FPS", "60FPS", "120FPS"), frameRate, m) { frameRate = it }
+        SettingsSegmentedControl(listOf("24FPS", "30FPS", "60FPS", "120FPS"), frameRate, m, supportedFps) { frameRate = it }
     }
     SettingsSlider("Bitrate", bitrate, 1f, 64f, 1f, " Mbps", m) { bitrate = it }
 
@@ -249,12 +299,34 @@ fun SoundSettings(m: Float) {
 
 @Composable
 fun SystemSettings(m: Float) {
-    var forceStop by remember { mutableStateOf(true) }
-    var debugging by remember { mutableStateOf(false) }
-    var forceFps by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settings = remember { com.ultra.game.space.managers.SettingsManager(context) }
+    var forceStop by remember { mutableStateOf(settings.getBoolean("sys_forceStop", true)) }
+    var forceData by remember { mutableStateOf(settings.getBoolean("sys_forceData", false)) }
+    var ramOpt by remember { mutableStateOf(settings.getBoolean("sys_ramOpt", true)) }
+    var storageOpt by remember { mutableStateOf(settings.getBoolean("sys_storageOpt", false)) }
+    var cpuOpt by remember { mutableStateOf(settings.getBoolean("sys_cpuOpt", true)) }
+    var thermalCtrl by remember { mutableStateOf(settings.getBoolean("sys_thermalCtrl", false)) }
+    var gamePriority by remember { mutableStateOf(settings.getBoolean("sys_gamePriority", true)) }
+    var forceFps by remember { mutableStateOf(settings.getBoolean("sys_forceFps", false)) }
+    var debugging by remember { mutableStateOf(settings.getBoolean("sys_debugging", false)) }
+    val optManager = remember { com.ultra.game.space.managers.OptimizationManager(context) }
+
+
+    LaunchedEffect(thermalCtrl) {
+        if (thermalCtrl) {
+            optManager.applyThermalControl()
+        }
+    }
 
     SettingsSectionTitle("Optimization", m)
     SettingsRow("Force Stop Background Activities", hint = true, m = m) { SettingsToggle(forceStop, m) { forceStop = it } }
+    SettingsRow("Force Stop Background Data", sub = true, m = m) { SettingsToggle(forceData, m) { forceData = it } }
+    SettingsRow("RAM Optimization", hint = true, m = m) { SettingsToggle(ramOpt, m) { ramOpt = it } }
+    SettingsRow("Storage Optimization", sub = true, m = m) { SettingsToggle(storageOpt, m) { storageOpt = it } }
+    SettingsRow("CPU Optimization", hint = true, m = m) { SettingsToggle(cpuOpt, m) { cpuOpt = it } }
+    SettingsRow("Game Priority", sub = true, m = m) { SettingsToggle(gamePriority, m) { gamePriority = it } }
+    SettingsRow("Thermal Control", hint = true, m = m) { SettingsToggle(thermalCtrl, m) { thermalCtrl = it } }
     SettingsRow("Force FPS Lock", sub = true, m = m) { SettingsToggle(forceFps, m) { forceFps = it } }
 
     SettingsSectionTitle("Telemetry", m)
@@ -263,18 +335,20 @@ fun SystemSettings(m: Float) {
 
 @Composable
 fun VibrationSettings(m: Float) {
-    var master by remember { mutableStateOf(true) }
-    var startVib by remember { mutableStateOf(true) }
-    var tapVib by remember { mutableStateOf(false) }
-    var intensity by remember { mutableStateOf(75f) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val settings = remember { com.ultra.game.space.managers.SettingsManager(context) }
+    var master by remember { mutableStateOf(settings.getBoolean("vib_master", true)) }
+    var startVib by remember { mutableStateOf(settings.getBoolean("vib_startVib", true)) }
+    var tapVib by remember { mutableStateOf(settings.getBoolean("vib_tapVib", false)) }
+    var intensity by remember { mutableStateOf(settings.getFloat("vib_intensity", 75f)) }
 
     SettingsSectionTitle("Haptics", m)
-    SettingsRow("Master Haptics", m = m) { SettingsToggle(master, m) { master = it } }
-    SettingsRow("Game Start Vibration", m = m) { SettingsToggle(startVib, m) { startVib = it } }
-    SettingsRow("Tap Feedback", sub = true, m = m) { SettingsToggle(tapVib, m) { tapVib = it } }
+    SettingsRow("Master Haptics", m = m) { SettingsToggle(master, m) { master = it; settings.putBoolean("vib_master", it) } }
+    SettingsRow("Game Start Vibration", m = m) { SettingsToggle(startVib, m) { startVib = it; settings.putBoolean("vib_startVib", it) } }
+    SettingsRow("Tap Feedback", sub = true, m = m) { SettingsToggle(tapVib, m) { tapVib = it; settings.putBoolean("vib_tapVib", it) } }
 
     SettingsSectionTitle("Strength", m)
-    SettingsSlider("Vibration Intensity", intensity, 0f, 100f, 5f, "%", m) { intensity = it }
+    SettingsSlider("Vibration Intensity", intensity, 0f, 100f, 5f, "%", m) { intensity = it; settings.putFloat("vib_intensity", it) }
 }
 
 // --- Reusable Settings UI Components ---
@@ -389,7 +463,7 @@ fun SettingsToggle(value: Boolean, m: Float, onValueChange: (Boolean) -> Unit) {
 }
 
 @Composable
-fun SettingsSegmentedControl(options: List<String>, value: String, m: Float, onValueChange: (String) -> Unit) {
+fun SettingsSegmentedControl(options: List<String>, value: String, m: Float, enabledOptions: List<String> = options, onValueChange: (String) -> Unit) {
     Row(
         modifier = Modifier
             .border(1.dp, BorderDark)
@@ -397,13 +471,16 @@ fun SettingsSegmentedControl(options: List<String>, value: String, m: Float, onV
     ) {
         options.forEach { option ->
             val isActive = value == option
+            val isEnabled = enabledOptions.contains(option)
             Box(
                 modifier = Modifier
                     .defaultMinSize(minWidth = 9.0.cqh(m))
-                    .clickable { onValueChange(option) }
+                    .let { if (isEnabled) it.clickable { onValueChange(option) } else it }
                     .let {
                         if (isActive) {
                             it.background(PrimaryRed)
+                        } else if (!isEnabled) {
+                            it.background(PanelDark2.copy(alpha = 0.5f))
                         } else {
                             it
                         }
@@ -413,7 +490,7 @@ fun SettingsSegmentedControl(options: List<String>, value: String, m: Float, onV
             ) {
                 Text(
                     text = option,
-                    color = if (isActive) TextPrimary else TextSecondary,
+                    color = if (isActive) TextPrimary else if (!isEnabled) TextSecondary.copy(alpha = 0.3f) else TextSecondary,
                     fontSize = 1.9.cqhSp(m),
                     fontWeight = FontWeight.SemiBold,
                     fontFamily = Rajdhani,

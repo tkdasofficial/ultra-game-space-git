@@ -1,6 +1,8 @@
 package com.ultra.game.space.ui.screens
 
 import android.content.pm.PackageManager
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -88,9 +90,18 @@ fun DashboardScreen(
     var activeGameIndex by remember { mutableIntStateOf(0) }
     var performanceMode by remember { mutableStateOf("ECONOMY") }
     var isModeMenuOpen by remember { mutableStateOf(false) }
+    var menuOffset by remember { mutableStateOf(androidx.compose.ui.unit.DpOffset.Zero) }
+    val density = androidx.compose.ui.platform.LocalDensity.current
 
     val games by gameViewModel.games.collectAsState()
     val stats by statsViewModel.stats.collectAsState()
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val optManager = remember { com.ultra.game.space.managers.OptimizationManager(context) }
+    
+    LaunchedEffect(performanceMode) {
+        optManager.applyOptimization(performanceMode)
+    }
     
     // Ensure active index is valid
     if (games.isNotEmpty() && activeGameIndex >= games.size) {
@@ -120,12 +131,6 @@ fun DashboardScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        modifier = Modifier
-                            .size(3.4.cqh(m))
-                            .background(PrimaryRed)
-                    )
-                    Spacer(modifier = Modifier.width(1.8.cqh(m)))
                     Text(
                         text = "ULTRA GAME SPACE",
                         color = TextPrimary,
@@ -216,6 +221,10 @@ fun DashboardScreen(
                                 }
                                 Spacer(modifier = Modifier.height(0.9.cqh(m)))
                                 // Progress bar
+                                val animatedProgress by androidx.compose.animation.core.animateFloatAsState(
+                                    targetValue = stat.pct / 100f,
+                                    animationSpec = androidx.compose.animation.core.tween(durationMillis = 800)
+                                )
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -224,7 +233,7 @@ fun DashboardScreen(
                                 ) {
                                     Box(
                                         modifier = Modifier
-                                            .fillMaxWidth(stat.pct / 100f)
+                                            .fillMaxWidth(animatedProgress)
                                             .fillMaxHeight()
                                             .background(
                                                 Brush.horizontalGradient(listOf(PrimaryRedLight, PrimaryRedDark)),
@@ -380,7 +389,17 @@ fun DashboardScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .clickable { isModeMenuOpen = !isModeMenuOpen }
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onTap = { offset ->
+                                        menuOffset = androidx.compose.ui.unit.DpOffset(
+                                            x = with(density) { offset.x.toDp() },
+                                            y = with(density) { offset.y.toDp() }
+                                        )
+                                        isModeMenuOpen = true
+                                    }
+                                )
+                            }
                             .background(if (isBoosted) PrimaryRed.copy(alpha=0.15f) else PanelDark, ClipTabLShape(15.dp))
                             .border(1.dp, if (isBoosted) PrimaryRed else BorderDark, ClipTabLShape(15.dp)),
                         contentAlignment = Alignment.Center
@@ -407,6 +426,7 @@ fun DashboardScreen(
                     DropdownMenu(
                         expanded = isModeMenuOpen,
                         onDismissRequest = { isModeMenuOpen = false },
+                        offset = menuOffset,
                         modifier = Modifier.background(PanelDark).border(1.dp, BorderDark)
                     ) {
                         modes.forEach { mStr ->
