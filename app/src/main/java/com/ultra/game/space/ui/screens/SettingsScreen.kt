@@ -173,11 +173,9 @@ fun DisplaySettings(m: Float) {
     }
     if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
         supportedGraphics.add("HDR")
-    }
-    if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
         supportedGraphics.add("ULTRA HDR")
     }
-    if (profile.maxResolution == "4K" || profile.maxGpuFreq > 1500) {
+    if (profile.maxResolution == "4K") {
         supportedGraphics.add("EXTREME")
     }
     
@@ -246,7 +244,10 @@ fun RecordingSettings(m: Float) {
 
     val profile = remember { com.ultra.game.space.managers.DeviceCapabilityManager.getProfile(context) }
     
-    val supportedRes = mutableListOf("480P", "720P", "1080P")
+    val supportedRes = mutableListOf("480P", "720P")
+    if (profile.maxResolution == "FHD" || profile.maxResolution == "1080P" || profile.maxResolution == "2K" || profile.maxResolution == "4K") {
+        supportedRes.add("1080P")
+    }
     if (profile.maxResolution == "2K" || profile.maxResolution == "4K") {
         supportedRes.add("2K")
     }

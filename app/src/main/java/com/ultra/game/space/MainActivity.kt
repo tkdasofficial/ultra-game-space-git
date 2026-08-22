@@ -13,10 +13,15 @@ import com.ultra.game.space.ui.navigation.AppNavigation
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.activity.result.contract.ActivityResultContracts
+import android.Manifest
+import android.os.Build
 import java.io.PrintWriter
 import java.io.StringWriter
 
 class MainActivity : ComponentActivity() {
+  private val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ -> }
+
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
     
@@ -44,6 +49,15 @@ class MainActivity : ComponentActivity() {
     insetsController.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
     insetsController.hide(WindowInsetsCompat.Type.systemBars())
     
+    val permissionsToRequest = mutableListOf<String>()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        permissionsToRequest.add(Manifest.permission.POST_NOTIFICATIONS)
+    }
+    // KILL_BACKGROUND_PROCESSES and VIBRATE are normal install-time permissions, but we ensure the framework is aware.
+    if (permissionsToRequest.isNotEmpty()) {
+        requestPermissionLauncher.launch(permissionsToRequest.toTypedArray())
+    }
+
     setContent {
       MyApplicationTheme {
         Surface(modifier = Modifier.fillMaxSize()) {

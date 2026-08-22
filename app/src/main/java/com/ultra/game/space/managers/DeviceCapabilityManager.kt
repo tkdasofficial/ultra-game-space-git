@@ -23,8 +23,8 @@ object DeviceCapabilityManager {
 
         // Read supported display modes for FPS limits
         val wm = context.getSystemService(Context.WINDOW_SERVICE) as? WindowManager
-        var maxDisplayFps = 60
-        var maxDisplayHeight = 1080
+        var maxDisplayFps = 0
+        var maxDisplayHeight = 0
         
         try {
             val display = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -42,10 +42,22 @@ object DeviceCapabilityManager {
                         maxDisplayHeight = mode.physicalHeight
                     }
                 }
+                
+                // Fallback to current mode if supported modes iteration didn't yield anything
+                if (maxDisplayHeight == 0) {
+                    maxDisplayHeight = display.mode.physicalHeight
+                }
+                if (maxDisplayFps == 0) {
+                    maxDisplayFps = display.mode.refreshRate.toInt()
+                }
             }
         } catch (e: Exception) {
             // Fallback gracefully
         }
+
+        // Failsafe defaults if completely unable to read (e.g. headless emulator)
+        if (maxDisplayHeight == 0) maxDisplayHeight = 720
+        if (maxDisplayFps == 0) maxDisplayFps = 60
 
         val maxCpu = when {
             totalRamGb > 10.0 -> 3.20
@@ -59,11 +71,12 @@ object DeviceCapabilityManager {
             else -> 1114.0
         }
 
+        // Cap based on actual physical height, ensuring we accurately report HD limits
         val maxRes = when {
             maxDisplayHeight >= 2160 -> "4K"
             maxDisplayHeight >= 1440 -> "2K"
             maxDisplayHeight >= 1080 -> "1080P"
-            else -> "720P"
+            else -> "HD"
         }
 
         return DeviceProfile(maxCpu, maxGpu, maxDisplayFps, maxRes)
