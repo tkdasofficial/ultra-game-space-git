@@ -115,7 +115,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit) {
                     Spacer(modifier = Modifier.width(2.0.cqh(m)))
                     Box(
                         modifier = Modifier
-                            .size(5.0.cqh(m))
+                            .size(7.6.cqh(m))
                             .border(1.dp, BorderDark, ClipNotchShape(15.dp))
                             .background(PanelDark2, ClipNotchShape(15.dp))
                             .clip(ClipNotchShape(15.dp))
@@ -126,7 +126,7 @@ fun SettingsScreen(onNavigateBack: () -> Unit) {
                             Icons.Default.ChevronLeft,
                             contentDescription = "Back",
                             tint = TextPrimary,
-                            modifier = Modifier.size(2.6.cqh(m))
+                            modifier = Modifier.size(5.2.cqh(m))
                         )
                     }
                 }
@@ -366,8 +366,7 @@ fun SettingsToggle(value: Boolean, m: Float, onValueChange: (Boolean) -> Unit) {
                     .clickable { onValueChange(isTrue) }
                     .let {
                         if (isActive && isTrue) {
-                            it.glow(PrimaryRed, 8.dp, RoundedCornerShape(0.dp))
-                              .background(PrimaryRed)
+                            it.background(PrimaryRed)
                         } else if (isActive && !isTrue) {
                             it.background(PanelDark2)
                         } else {
@@ -404,8 +403,7 @@ fun SettingsSegmentedControl(options: List<String>, value: String, m: Float, onV
                     .clickable { onValueChange(option) }
                     .let {
                         if (isActive) {
-                            it.glow(PrimaryRed, 8.dp, RoundedCornerShape(0.dp))
-                              .background(PrimaryRed)
+                            it.background(PrimaryRed)
                         } else {
                             it
                         }
@@ -482,7 +480,6 @@ fun SettingsSlider(
                     .fillMaxWidth(pct)
                     .height(0.7.cqh(m))
                     .align(Alignment.CenterStart)
-                    .glow(PrimaryRed, 6.dp, RoundedCornerShape(0.dp))
                     .background(Brush.horizontalGradient(listOf(PrimaryRedLight, PrimaryRedDark)))
             )
             // Thumb (simulated invisible slider)

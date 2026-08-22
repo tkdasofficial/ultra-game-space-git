@@ -93,7 +93,7 @@ fun AppManagementScreen(gameViewModel: GameViewModel, onNavigateBack: () -> Unit
                 }
                 Box(
                     modifier = Modifier
-                        .size(5.0.cqh(m))
+                        .size(7.6.cqh(m))
                         .border(1.dp, BorderDark, ClipNotchShape(14.dp))
                         .background(PanelDark2, ClipNotchShape(14.dp))
                         .clip(ClipNotchShape(14.dp))
@@ -104,7 +104,7 @@ fun AppManagementScreen(gameViewModel: GameViewModel, onNavigateBack: () -> Unit
                         Icons.Default.Close, 
                         contentDescription = "Close", 
                         tint = TextPrimary, 
-                        modifier = Modifier.size(2.6.cqh(m))
+                        modifier = Modifier.size(5.2.cqh(m))
                     )
                 }
             }

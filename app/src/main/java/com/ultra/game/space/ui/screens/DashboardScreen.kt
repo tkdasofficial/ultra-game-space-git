@@ -108,18 +108,6 @@ fun DashboardScreen(
         val configuration = androidx.compose.ui.platform.LocalConfiguration.current
         val m = configuration.screenHeightDp / 100f
 
-        // Ambient glow
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.radialGradient(
-                        colors = listOf(PrimaryRed.copy(alpha = 0.15f), Color.Transparent),
-                        radius = configuration.screenHeightDp.toFloat() * 2.5f
-                    )
-                )
-        )
-
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -150,7 +138,7 @@ fun DashboardScreen(
                 
                 Box(
                     modifier = Modifier
-                        .size(5.4.cqh(m))
+                        .size(7.6.cqh(m))
                         .border(1.dp, BorderDark, ClipNotchShape(15.dp))
                         .background(PanelDark2, ClipNotchShape(15.dp))
                         .clip(ClipNotchShape(15.dp))
@@ -161,7 +149,7 @@ fun DashboardScreen(
                         Icons.Default.Settings,
                         contentDescription = "Settings",
                         tint = TextPrimary,
-                        modifier = Modifier.size(2.6.cqh(m))
+                        modifier = Modifier.size(5.2.cqh(m))
                     )
                 }
             }
@@ -238,7 +226,6 @@ fun DashboardScreen(
                                         modifier = Modifier
                                             .fillMaxWidth(stat.pct / 100f)
                                             .fillMaxHeight()
-                                            .glow(PrimaryRed, 6.dp, CircleShape)
                                             .background(
                                                 Brush.horizontalGradient(listOf(PrimaryRedLight, PrimaryRedDark)),
                                                 CircleShape
@@ -318,8 +305,7 @@ fun DashboardScreen(
                                             .size(size)
                                             .let {
                                                 if (isActive) {
-                                                    it.glow(PrimaryRed, 12.dp, CircleShape)
-                                                      .border(2.dp, PrimaryRed, CircleShape)
+                                                    it.border(2.dp, PrimaryRed, CircleShape)
                                                       .padding(1.4.cqh(m))
                                                 } else {
                                                     it.padding(0.9.cqh(m))
@@ -375,7 +361,6 @@ fun DashboardScreen(
                             modifier = Modifier
                                 .width(9.0.cqh(m))
                                 .height(0.5.cqh(m))
-                                .glow(PrimaryRed, 4.dp, CircleShape)
                                 .background(PrimaryRed, CircleShape)
                         )
                     }
@@ -452,7 +437,6 @@ fun DashboardScreen(
                         .weight(0.34f)
                         .height(9.4.cqh(m))
                         .clickable { /* Boost Action */ }
-                        .glow(PrimaryRed, 12.dp, ClipHexShape(15.dp))
                         .background(
                             Brush.horizontalGradient(listOf(PrimaryRedLight, PrimaryRedDark)), 
                             ClipHexShape(15.dp)
