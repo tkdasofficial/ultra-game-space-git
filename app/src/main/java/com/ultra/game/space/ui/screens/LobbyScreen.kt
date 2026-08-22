@@ -30,6 +30,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -159,6 +161,8 @@ fun LobbyScreen(
 
 @Composable
 fun GameCard(game: Game, m: Float, modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val optManager = androidx.compose.runtime.remember { com.ultra.game.space.managers.OptimizationManager(context) }
     Box(
         modifier = modifier
             .border(1.dp, BorderDark, ClipNotchShape(14.dp))
@@ -249,7 +253,16 @@ fun GameCard(game: Game, m: Float, modifier: Modifier = Modifier) {
                     .height(5.4.cqh(m))
                     .background(PrimaryRed, ClipTabLShape(18.dp))
                     .clip(ClipTabLShape(18.dp))
-                    .clickable { /* Launch */ },
+                    .clickable {
+                        Toast.makeText(context, "Optimizing Memory & Launching...", Toast.LENGTH_SHORT).show()
+                        optManager.applyOptimization(game.mode)
+                        val intent = context.packageManager.getLaunchIntentForPackage(game.packageName)
+                        if (intent != null) {
+                            context.startActivity(intent)
+                        } else {
+                            Toast.makeText(context, "App not found", Toast.LENGTH_SHORT).show()
+                        }
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {

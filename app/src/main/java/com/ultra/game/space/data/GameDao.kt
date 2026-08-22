@@ -12,6 +12,9 @@ interface GameDao {
     @Query("SELECT * FROM games")
     fun getAllGames(): Flow<List<Game>>
 
+    @Query("SELECT * FROM games")
+    fun getAllGamesSync(): List<Game>
+
     @Insert
     suspend fun insertGame(game: Game)
     

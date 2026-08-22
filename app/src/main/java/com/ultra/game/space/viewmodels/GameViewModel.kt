@@ -33,6 +33,10 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
     private val _installedApps = MutableStateFlow<List<InstalledApp>>(emptyList())
     val installedApps: StateFlow<List<InstalledApp>> = _installedApps
 
+    init {
+        loadInstalledApps()
+    }
+
     fun addGame(game: Game) {
         viewModelScope.launch {
             gameDao.insertGame(game)
@@ -50,16 +54,32 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             val pm = getApplication<Application>().packageManager
             try {
                 val packages = pm.getInstalledApplications(PackageManager.GET_META_DATA)
-                val appList = packages.mapNotNull { appInfo ->
+                val appList = mutableListOf<InstalledApp>()
+                
+                val currentGames = gameDao.getAllGamesSync()
+                val currentPackages = currentGames.map { it.packageName }.toSet()
+
+                for (appInfo in packages) {
                     if (pm.getLaunchIntentForPackage(appInfo.packageName) != null) {
-                        InstalledApp(
-                            name = pm.getApplicationLabel(appInfo).toString(),
-                            packageName = appInfo.packageName,
-                            applicationInfo = appInfo
-                        )
-                    } else null
-                }.sortedBy { it.name }
-                _installedApps.value = appList
+                        val name = pm.getApplicationLabel(appInfo).toString()
+                        val packageName = appInfo.packageName
+                        
+                        appList.add(InstalledApp(name, packageName, appInfo))
+                        
+                        // Auto-detect and add games
+                        val isGame = if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            appInfo.category == ApplicationInfo.CATEGORY_GAME
+                        } else {
+                            (appInfo.flags and ApplicationInfo.FLAG_IS_GAME) != 0
+                        }
+                        
+                        if (isGame && !currentPackages.contains(packageName)) {
+                            gameDao.insertGame(Game(packageName = packageName, name = name))
+                        }
+                    }
+                }
+                
+                _installedApps.value = appList.sortedBy { it.name }
             } catch (e: Throwable) { 
                 e.printStackTrace()
             }

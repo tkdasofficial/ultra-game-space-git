@@ -23,6 +23,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
@@ -452,11 +456,25 @@ fun DashboardScreen(
                 Spacer(modifier = Modifier.width(2.4.cqh(m)))
 
                 // Boost Now (flex-1)
+                val scope = androidx.compose.runtime.rememberCoroutineScope()
+                var boostText by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf("BOOST NOW") }
+                val context = androidx.compose.ui.platform.LocalContext.current
+                
                 Box(
                     modifier = Modifier
                         .weight(0.34f)
                         .height(9.4.cqh(m))
-                        .clickable { /* Boost Action */ }
+                        .clickable { 
+                            scope.launch {
+                                boostText = "BOOSTING..."
+                                optManager.applyOptimization("EXTREME")
+                                delay(1000)
+                                Toast.makeText(context, "Memory Freed & Background Tasks Killed", Toast.LENGTH_SHORT).show()
+                                boostText = "BOOSTED"
+                                delay(2000)
+                                boostText = "BOOST NOW"
+                            }
+                        }
                         .background(
                             Brush.horizontalGradient(listOf(PrimaryRedLight, PrimaryRedDark)), 
                             ClipHexShape(15.dp)
@@ -464,7 +482,7 @@ fun DashboardScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        text = "BOOST NOW", 
+                        text = boostText, 
                         color = TextPrimary,
                         fontSize = 3.2.cqhSp(m), 
                         fontWeight = FontWeight.Bold, 
